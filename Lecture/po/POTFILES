@@ -1,0 +1,5 @@
+data/org.gnome.Lecture.desktop.in
+data/org.gnome.Lecture.appdata.xml.in
+data/org.gnome.Lecture.gschema.xml
+src/window.uisrc/main.py
+src/window.py

@@ -1,0 +1,184 @@
+self.is_recording = False
+        self.frames = []
+        self.stream = None
+        self.audio = pyaudio.PyAudio()
+
+        self.start_button.connect("clicked", self.start_recording)
+        self.stop_button.connect("clicked", self.stop_recording)
+
+    def start_recording(self, button):
+        self.is_recording = True
+        frames = []
+
+        self.stream = self.audio.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=1024)
+
+        threading.Thread(target=self.record).start()
+
+    def record(self):
+        while self.is_recording:
+            data = self.stream.read(1024, exception_on_overflow=False)
+            self.frames.append(data)
+
+    def stop_recording(self, button):
+        self.is_recording = False
+
+        self.stream.stop_stream()
+        self.stream.close()
+        self.stream = None
+
+        with wave.open("recording.wav", "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(self.audio.get_sample_size(pyaudio.pant16))
+            wf.setframerate(44100)
+            wf.writeframes(b''.join(self.frames))
+        self.audio.terminate()
+
+
+        self.builder = Gtk.Builder()
+        self.builder.add_from_file("/home/aidan/Projects/Lecture/src/window.ui")
+        self.builder.connect_signals(self)
+
+        self.start_button = self.builder.get_object("start_recording")
+        self.stop_button = self.builder.get_object("stop_recording")
+
+
+
+
+---------------------------------------------------------------------
+
+
+import pyaudio
+import threading
+import wave
+from gi.repository import Gtk
+from .gi_composites import GtkTemplate
+
+
+@GtkTemplate(ui='/org/gnome/Lecture/window.ui')
+class LectureWindow(Gtk.ApplicationWindow):
+    __gtype_name__ = 'LectureWindow'
+
+    label = GtkTemplate.Child()
+
+    start_button = GtkTemplate.Child()
+    stop_button = GtkTemplate.Child()
+
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.init_template()
+
+        self.is_recording = False
+        self.frames = []
+        self.stream = None
+        self.audio = pyaudio.PyAudio()
+        self.is_recording = False
+        self.frames = []
+        self.stream = None
+        self.audio = pyaudio.PyAudio()
+
+        self.start_button.connect("clicked", self.start_recording)
+        self.stop_button.connect("clicked", self.stop_recording)
+
+    def start_recording(self, button):
+        self.is_recording = True
+        frames = []
+
+        self.stream = self.audio.open(format=pyaudio.paInt16, channels=1, rate=44100,
+        input=True, frames_per_buffer=1024)
+
+        threading.Thread(target=self.record).start()
+
+    def record(self):
+        while self.is_recording:
+            print("recording")
+            data = self.stream.read(1024, exception_on_overflow=False)
+            if len(self.frames) < 10:
+                print(data[:10])
+            self.frames.append(data)
+
+    def stop_recording(self, button):
+        self.is_recording = False
+
+        self.stream.stop_stream()
+        self.stream.close()
+        self.stream = None
+
+        print(f"Total frames captured: {len(self.frames)}")
+
+        with wave.open("recording.wav", "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(self.audio.get_sample_size(pyaudio.paInt16))
+            wf.setframerate(44100)
+            wf.writeframes(b''.join(self.frames))
+        self.audio.terminate()p
+
+------------------------------------------------------------------
+
+import pyaudio
+import threading
+import wave
+from gi.repository import Gtk
+from .gi_composites import GtkTemplate
+
+@GtkTemplate(ui='/org/gnome/Lecture/window.ui')
+class LectureWindow(Gtk.ApplicationWindow):
+    __gtype_name__ = 'LectureWindow'
+
+    label = GtkTemplate.Child()
+    start_button = GtkTemplate.Child()
+    stop_button = GtkTemplate.Child()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.init_template()
+
+        self.is_recording = False
+        self.frames = []
+        self.stream = None
+        self.audio = pyaudio.PyAudio()
+
+        self.start_button.connect("clicked", self.start_recording)
+        self.stop_button.connect("clicked", self.stop_recording)
+
+    def start_recording(self, button):
+        print("start_recording has been called")
+        if not self.is_recording:
+            self.is_recording = True
+            self.frames = []
+
+            try:
+                print("recording is being attempted")
+                self.stream = self.audio.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=1024, input_device_index=2)
+                threading.Thread(target=self.record).start()
+            except IOError as e:
+                print(f"Error opening audio stream: {e}")
+                self.is_recording = False
+
+    def record(self):
+        while self.is_recording:
+            if self.stream.is_active():
+                try:
+                    data = self.stream.read(1024, exception_on_overflow=False)
+                    self.frames.append(data)
+                except IOError as e:
+                    print(f"Error recording audio: {e}")
+                    break
+            else:
+                print("Stream is not active.")
+                break
+
+    def stop_recording(self, button):
+        self.is_recording = False
+        if self.stream:
+            self.stream.stop_stream()
+            self.stream.close()
+            self.stream = None
+
+            with wave.open("recording.wav", "wb") as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(self.audio.get_sample_size(pyaudio.paInt16))
+                wf.setframerate(44100)
+                wf.writeframes(b''.join(self.frames))
+
+            self.audio.terminate()
